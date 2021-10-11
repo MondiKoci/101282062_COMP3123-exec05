@@ -1,6 +1,9 @@
+const { fail } = require('assert');
+const e = require('express');
 const express = require('express');
 const app = express();
 const router = express.Router();
+var fs = require("fs");
 
 /*
 - Create new html file name home.html 
@@ -8,15 +11,18 @@ const router = express.Router();
 - Return home.html page to client
 */
 router.get('/home', (req,res) => {
-  res.send('This is home router');
+  res.sendFile(__dirname + "/home.html")
 });
 
 /*
 - Return all details from user.json file to client as JSON format
 */
-router.get('/profile', (req,res) => {
-  res.send('This is profile router');
-});
+
+router.get('/profile', function (req, res) {
+  fs.readFile( __dirname + "/user.json", 'utf8', function (err, data) {
+      res.end(data);
+  });
+})
 
 /*
 - Modify /login router to accept username and password as query string parameter
@@ -38,15 +44,30 @@ router.get('/profile', (req,res) => {
     }
 */
 router.get('/login', (req,res) => {
-  res.send('This is login router');
+  fs.readFile(__dirname+"/user.json", 'utf8', function(error, data) {
+    let u = JSON.parse(data)
+    let uname = req.query.username;
+	  let psw = req.query.password;
+    if(u['username'] == uname && u['password'] == psw ){
+      res.json({status: true, message: "User is valid"});
+    }else if(u['password'] == psw && u['username'] != uname){
+      res.json({status: false, message: "Username is invalid"});
+    }else if(u['username'] == uname && u['password'] != psw){
+      res.json({status: false, message: "Password is invalid"});
+    }else{
+      res.json({status: false, message: "Username and password wrong"});
+    }
+  })
 });
 
 /*
 - Modify /logout route to accept username as parameter and display message
     in HTML format like <b>${username} successfully logout.<b>
 */
-router.get('/logout', (req,res) => {
-  res.send('This is logout router');
+router.get('/logout/:username', (req,res) => {
+  let username = req.params.username;
+  res.set('Content-Type', 'text/html');
+  res.send(Buffer.from(`<b>${username} successfully logged out.</b>`));
 });
 
 app.use('/', router);
